@@ -241,7 +241,15 @@ async def generate_collage_and_retention():
             valid_snapshots.append(snapshot)
 
     if not valid_snapshots:
-        print("❌ Error: Could not pull valid image feeds from any configured channel.")
+        print("⚠️ No valid image feeds found.")
+        print("💾 Saving retention data only.")
+
+        json_path = uploads_dir / f"{pht_date_stamp}-{brand.lower()}-retention.txt"
+
+        with open(json_path, "w") as f:
+            json.dump(retention_data, f, indent=4)
+
+        print(f"📁 Retention data saved: {json_path}")
         return
 
     # Dynamic Canvas Grid Math
