@@ -1,7 +1,14 @@
 @echo off
-set "APP=%~dp0cgt.exe"
 
-schtasks /create /tn "CCTVGridTool" /tr "\"%APP%\"" /sc onlogon /rl highest /f
+set "APPDIR=%~dp0"
+set "LAUNCHER=%~dp0run_cgt.bat"
+
+schtasks /create ^
+ /tn "CCTVGridTool" ^
+ /tr "cmd.exe /c ""%LAUNCHER%""" ^
+ /sc onlogon ^
+ /rl highest ^
+ /f
 
 if %errorlevel% equ 0 (
     echo CCTVGridTool task created successfully.
