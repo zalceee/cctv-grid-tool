@@ -619,6 +619,14 @@ async def generate_collage_and_retention():
             / f"{pht_date_stamp}-{brand.lower()}-retention.txt"
         )
 
+        # Delete previous day's retention files for this brand,
+        # even though no new collage image was generated.
+        for old_file in uploads_dir.glob(
+            f"*-{brand.lower()}-retention.txt"
+        ):
+            if old_file != json_path:
+                old_file.unlink()
+
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(
                 retention_data,
