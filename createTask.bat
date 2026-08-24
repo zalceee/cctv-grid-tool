@@ -4,7 +4,7 @@ set "APPDIR=%~dp0"
 set "LAUNCHER=%~dp0run_cgt.bat"
 
 schtasks /create ^
- /tn "ITTask\CCTVGridTool" ^
+ /tn "ITTool\CCTVGridTool" ^
  /tr "cmd.exe /c ""%LAUNCHER%""" ^
  /sc onlogon ^
  /rl highest ^
