@@ -3,5 +3,5 @@
 /build
 main.py
 dahua.py
-main.spec
+*.spec
 *.ico
