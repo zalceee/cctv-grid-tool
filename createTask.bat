@@ -6,7 +6,7 @@ set "LAUNCHER=%~dp0run_cgt.bat"
 echo Creating CCTV Grid Tool scheduled task...
 
 schtasks /create ^
- /tn "ITTool\CCTVGridTool" ^
+ /tn "ITTools\CCTVGridTool" ^
  /tr "cmd.exe /c ""%LAUNCHER%""" ^
  /sc onlogon ^
  /rl highest ^
@@ -29,8 +29,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
  "$task = Get-ScheduledTask -TaskName 'CCTVGridTool' -TaskPath '\ITTool\';" ^
  "$task.Settings.AllowDemandStart = $true;" ^
  "$task.Settings.StartWhenAvailable = $true;" ^
- "$task.Settings.StopIfGoingOnBatteries = $true;" ^
- "$task.Settings.DisallowStartIfOnBatteries = $true;" ^
+ "$task.Settings.StopIfGoingOnBatteries = $false;" ^
+ "$task.Settings.DisallowStartIfOnBatteries = $false;" ^
  "$task.Settings.ExecutionTimeLimit = 'PT0S';" ^
  "Set-ScheduledTask -TaskName 'CCTVGridTool' -TaskPath '\ITTool\' -Settings $task.Settings"
 
@@ -46,7 +46,7 @@ echo CCTVGridTool Task Configuration
 echo ========================================
 echo Allow task to run on demand       : YES
 echo Run task if scheduled start missed: YES
-echo Start only on AC power            : YES
+echo Start only on AC power            : NO
 echo Stop when switching to battery    : YES
 echo Execution time limit              : NONE
 echo Force stop after time limit        : NO
