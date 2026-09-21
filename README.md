@@ -3,9 +3,9 @@
 #### Technologies used
 ![Static Badge](https://img.shields.io/badge/python-yellow?logo=python)
 ![Static Badge](https://img.shields.io/badge/batch-black?logo=clion)
-![Static Badge](https://img.shields.io/badge/google_appscript-blue?logo=google)
-![Static Badge](https://img.shields.io/badge/google_drive-black?logo=googledrive)
-![Static Badge](https://img.shields.io/badge/google_sheets-black?logo=googlesheets)
+![Static Badge](https://img.shields.io/badge/google_appscript-blue?logo=google&logoColor=white)
+![Static Badge](https://img.shields.io/badge/google_drive-blue?logo=googledrive&logoColor=white)
+![Static Badge](https://img.shields.io/badge/google_sheets-green?logo=googlesheets&logoColor=white)
 ---
 
 1. Open .env file and put nesaary credentials save.
