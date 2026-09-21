@@ -2,6 +2,10 @@
 
 ![Static Badge](https://img.shields.io/badge/python-black?logo=python&logoColor=yellow)
 ![Static Badge](https://img.shields.io/badge/batch-black?logo=clion)
+![Static Badge](https://img.shields.io/badge/google_appscript-black?logo=google)
+![Static Badge](https://img.shields.io/badge/google_drive-black?logo=googledrive)
+![Static Badge](https://img.shields.io/badge/google_sheets-black?logo=googlesheets)
+
 
 1. Open .env file and put nesaary credentials save.
 2. Note! For channel format use format below:
