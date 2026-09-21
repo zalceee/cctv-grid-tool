@@ -1,6 +1,6 @@
 ## 📹CCTV-grid-Tool
----
-#### Technologies used<br>
+
+#### ⚙️Technologies used
 ![Static Badge](https://img.shields.io/badge/python-yellow?logo=python&logoColor=white)
 ![Static Badge](https://img.shields.io/badge/batch-white?logo=clion&logoColor=black)
 ![Static Badge](https://img.shields.io/badge/google_appscript-orange?logo=google&logoColor=white)
