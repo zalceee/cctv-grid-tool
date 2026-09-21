@@ -2,7 +2,7 @@
 ---
 #### Technologies used
 ![Static Badge](https://img.shields.io/badge/python-yellow?logo=python)
-![Static Badge](https://img.shields.io/badge/batch-white?logo=clion&label=black&logoColor=black)
+![Static Badge](https://img.shields.io/badge/batch-white?logo=clion&logoColor=white)
 ![Static Badge](https://img.shields.io/badge/google_appscript-orange?logo=google&logoColor=white)
 ![Static Badge](https://img.shields.io/badge/google_drive-blue?logo=googledrive&logoColor=white)
 ![Static Badge](https://img.shields.io/badge/google_sheets-green?logo=googlesheets&logoColor=white)
