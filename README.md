@@ -1,5 +1,8 @@
 ## CCTV-grid-Tool
 
+![Static Badge](https://img.shields.io/badge/python-black?logo=python&logoColor=yellow)
+![Static Badge](https://img.shields.io/badge/batch-black?logo=clion)
+
 1. Open .env file and put nesaary credentials save.
 2. Note! For channel format use format below:
 ### Dahua
