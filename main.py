@@ -66,7 +66,7 @@ GAP_THRESHOLD_MINUTES = 5
 # Previously this was 100 days.
 # Increased to 150 days so retention older than 100 days
 # can also be detected.
-HIKVISION_SEARCH_DAYS = 150
+HIKVISION_SEARCH_DAYS = 500
 
 # Number of Hikvision search results per page.
 HIKVISION_PAGE_SIZE = 1000
