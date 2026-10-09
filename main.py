@@ -58,6 +58,19 @@ PHT = timezone(timedelta(hours=8))
 # CONFIGURATION
 # ============================================================
 
+# How far the NVR's clock is allowed to drift from the reference clock
+# before it is flagged as out of sync.
+TIME_SYNC_THRESHOLD_SECONDS = int(os.getenv("TIME_SYNC_THRESHOLD_SECONDS", "60"))
+
+# Detection/reporting always runs. Clock correction is performed only when enabled.
+AUTO_FIX_TIME_SYNC = os.getenv("AUTO_FIX_TIME_SYNC", "false").strip().lower() == "true"
+
+# NTP server used when enabling/forcing NTP sync on the NVR.
+NTP_SERVER = os.getenv("NTP_SERVER", "pool.ntp.org")
+
+# Wait after enabling NTP before re-checking the device clock.
+NTP_SETTLE_SECONDS = int(os.getenv("NTP_SETTLE_SECONDS", "5"))
+
 # Gaps shorter than this are ignored.
 GAP_THRESHOLD_MINUTES = 5
 
@@ -341,6 +354,44 @@ def detect_gaps(recordings):
     return gaps
 
 
+def check_time_sync(device_time: datetime, reference_time: datetime):
+    """
+    Compares the NVR's reported device time against a trusted reference
+    time (this machine's clock) and flags it if the NVR clock has drifted
+    beyond TIME_SYNC_THRESHOLD_SECONDS.
+
+    offsetSeconds is positive when the device clock is BEHIND the reference
+    (i.e. the NVR is "late"), and negative when it is AHEAD.
+    """
+    if device_time is None:
+        return {
+            "checked": False,
+            "isSynced": False,
+            "status": "UNKNOWN",
+            "message": "Could not retrieve device time from NVR"
+        }
+
+    offset_seconds = (reference_time - device_time).total_seconds()
+    is_synced = abs(offset_seconds) <= TIME_SYNC_THRESHOLD_SECONDS
+
+    if is_synced:
+        status = "IN_SYNC"
+    elif offset_seconds > 0:
+        status = "LATE"       # NVR clock is behind / lagging
+    else:
+        status = "AHEAD"      # NVR clock is ahead of reference
+
+    return {
+        "checked": True,
+        "deviceTime": get_pht_iso_string(device_time),
+        "referenceTime": get_pht_iso_string(reference_time),
+        "offsetSeconds": round(offset_seconds, 2),
+        "thresholdSeconds": TIME_SYNC_THRESHOLD_SECONDS,
+        "isSynced": is_synced,
+        "status": status
+    }
+
+
 # ============================================================
 # BRAND DETECTION
 # ============================================================
@@ -461,6 +512,271 @@ async def get_channel_snapshot(
         )
 
         return None
+
+
+# --- DEVICE TIME (read) ---
+
+async def get_hikvision_device_time(client: httpx.AsyncClient):
+    """Fetches the NVR's current local time via ISAPI/System/time."""
+    url = f"http://{NVR_IP}/ISAPI/System/time"
+
+    try:
+        response = await client.get(url)
+
+        if response.status_code != 200:
+            print(f"Hikvision device time fetch failed with status {response.status_code}")
+            return None
+
+        result = xmltodict.parse(response.text)
+        local_time_str = result.get("Time", {}).get("localTime")
+
+        if not local_time_str:
+            return None
+
+        # e.g. "2026-08-17T08:00:00+08:00"
+        return datetime.fromisoformat(local_time_str)
+
+    except Exception as e:
+        print(f"Hikvision device time error: {str(e)}")
+        return None
+
+
+async def get_dahua_device_time(client: httpx.AsyncClient):
+    """Fetches the NVR's current local time via cgi-bin/global.cgi."""
+    url = f"http://{NVR_IP}/cgi-bin/global.cgi?action=getCurrentTime"
+
+    try:
+        response = await client.get(url)
+
+        if response.status_code != 200:
+            print(f"Dahua device time fetch failed with status {response.status_code}")
+            return None
+
+        parsed = parse_dahua_response(response.text)
+        time_str = parsed.get("result")
+
+        # Dahua reports its own local time; we treat it as PHT since that's
+        # this deployment's configured timezone.
+        return parse_dahua_time(time_str)
+
+    except Exception as e:
+        print(f"Dahua device time error: {str(e)}")
+        return None
+
+
+async def get_nvr_time_sync(client: httpx.AsyncClient, brand: str):
+    """Fetches device time for the detected brand and checks it against
+    this machine's clock (used as the trusted reference)."""
+
+    reference_time = datetime.now(PHT)
+
+    if brand == "HIKVISION":
+        device_time = await get_hikvision_device_time(client)
+    elif brand == "DAHUA":
+        device_time = await get_dahua_device_time(client)
+    else:
+        device_time = None
+
+    return check_time_sync(device_time, reference_time)
+
+
+# --- DEVICE TIME (write / fix) ---
+#
+# These functions only ever run when the sync check has already determined
+# the clock is out of tolerance AND AUTO_FIX_TIME_SYNC is enabled. They try
+# NTP first (the durable fix) and only fall back to forcing the clock
+# directly if NTP doesn't bring the device back into sync.
+
+async def fix_hikvision_time(client: httpx.AsyncClient):
+    """Attempts to correct a Hikvision NVR's clock. Returns an updated
+    time-sync dict with an added 'actionTaken' field."""
+
+    action_log = []
+
+    # 1. Try enabling NTP with a known-good server.
+    try:
+        mode_xml = "<Time><timeMode>NTP</timeMode></Time>"
+        await client.put(
+            f"http://{NVR_IP}/ISAPI/System/time",
+            content=mode_xml,
+            headers={"Content-Type": "application/xml"}
+        )
+
+        ntp_xml = (
+            "<NTPServer>"
+            "<id>1</id>"
+            "<addressingFormatType>hostname</addressingFormatType>"
+            f"<hostName>{NTP_SERVER}</hostName>"
+            "<portNo>123</portNo>"
+            "<synchronizeInterval>60</synchronizeInterval>"
+            "</NTPServer>"
+        )
+        await client.put(
+            f"http://{NVR_IP}/ISAPI/System/time/ntpServers/1",
+            content=ntp_xml,
+            headers={"Content-Type": "application/xml"}
+        )
+
+        action_log.append(f"Enabled NTP (server: {NTP_SERVER})")
+
+        await asyncio.sleep(NTP_SETTLE_SECONDS)
+
+        device_time = await get_hikvision_device_time(client)
+        result = check_time_sync(device_time, datetime.now(PHT))
+
+        if result.get("isSynced"):
+            result["actionTaken"] = " -> ".join(action_log)
+            return result
+
+    except Exception as e:
+        action_log.append(f"NTP attempt failed: {str(e)}")
+        print(f"[HIKVISION] NTP fix error: {str(e)}")
+
+    # 2. Fallback: force the clock directly.
+    try:
+        target_time = datetime.now(PHT)
+        time_str = target_time.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
+
+        manual_xml = (
+            f"<Time><timeMode>manual</timeMode><localTime>{time_str}</localTime></Time>"
+        )
+        response = await client.put(
+            f"http://{NVR_IP}/ISAPI/System/time",
+            content=manual_xml,
+            headers={"Content-Type": "application/xml"}
+        )
+
+        if response.status_code == 200:
+            action_log.append(f"Manually set clock to {time_str}")
+        else:
+            action_log.append(f"Manual set failed with HTTP {response.status_code}")
+
+        device_time = await get_hikvision_device_time(client)
+        result = check_time_sync(device_time, datetime.now(PHT))
+        result["actionTaken"] = " -> ".join(action_log)
+        return result
+
+    except Exception as e:
+        print(f"[HIKVISION] Manual time-set error: {str(e)}")
+        return {
+            "checked": True,
+            "isSynced": False,
+            "status": "FIX_FAILED",
+            "message": str(e),
+            "actionTaken": " -> ".join(action_log)
+        }
+
+
+async def fix_dahua_time(client: httpx.AsyncClient):
+    """Attempts to correct a Dahua NVR's clock. Returns an updated
+    time-sync dict with an added 'actionTaken' field."""
+
+    action_log = []
+
+    # 1. Try enabling NTP + triggering an immediate one-time sync.
+    try:
+        config_url = (
+            f"http://{NVR_IP}/cgi-bin/configManager.cgi"
+            f"?action=setConfig&NTP.Enable=true&NTP.Address={NTP_SERVER}&NTP.Port=123"
+        )
+        await client.get(config_url)
+
+        sync_url = (
+            f"http://{NVR_IP}/cgi-bin/global.cgi"
+            f"?action=ntp&Address={NTP_SERVER}&Port=123&TimeZone=8"
+        )
+        await client.get(sync_url)
+
+        action_log.append(f"Enabled NTP (server: {NTP_SERVER})")
+
+        await asyncio.sleep(NTP_SETTLE_SECONDS)
+
+        device_time = await get_dahua_device_time(client)
+        result = check_time_sync(device_time, datetime.now(PHT))
+
+        if result.get("isSynced"):
+            result["actionTaken"] = " -> ".join(action_log)
+            return result
+
+    except Exception as e:
+        action_log.append(f"NTP attempt failed: {str(e)}")
+        print(f"[DAHUA] NTP fix error: {str(e)}")
+
+    # 2. Fallback: force the clock directly.
+    try:
+        target_time = datetime.now(PHT)
+        time_str = target_time.strftime("%Y-%m-%d %H:%M:%S")
+
+        set_url = (
+            f"http://{NVR_IP}/cgi-bin/global.cgi"
+            f"?action=setCurrentTime&time={time_str}"
+        )
+        response = await client.get(set_url)
+
+        if response.status_code == 200:
+            action_log.append(f"Manually set clock to {time_str}")
+        else:
+            action_log.append(f"Manual set failed with HTTP {response.status_code}")
+
+        device_time = await get_dahua_device_time(client)
+        result = check_time_sync(device_time, datetime.now(PHT))
+        result["actionTaken"] = " -> ".join(action_log)
+        return result
+
+    except Exception as e:
+        print(f"[DAHUA] Manual time-set error: {str(e)}")
+        return {
+            "checked": True,
+            "isSynced": False,
+            "status": "FIX_FAILED",
+            "message": str(e),
+            "actionTaken": " -> ".join(action_log)
+        }
+
+
+async def ensure_nvr_time_sync(client: httpx.AsyncClient, brand: str):
+    """
+    Checks the NVR clock. Only calls the write/fix functions if the clock
+    is actually out of sync AND AUTO_FIX_TIME_SYNC is enabled.
+    """
+
+    time_sync = await get_nvr_time_sync(client, brand)
+
+    if not time_sync.get("checked"):
+        print("⚠️ Time sync check: could not read NVR device time.")
+        return time_sync
+
+    if time_sync["isSynced"]:
+        print("✅ NVR clock is in sync.")
+        return time_sync
+
+    # Out of sync from here on.
+    drift = format_gap_duration(timedelta(seconds=abs(time_sync["offsetSeconds"])))
+
+    if time_sync["status"] == "LATE":
+        print(f"⚠️ NVR clock is LATE by {drift} (device: {time_sync['deviceTime']}, reference: {time_sync['referenceTime']})")
+    else:
+        print(f"⚠️ NVR clock is AHEAD by {drift} (device: {time_sync['deviceTime']}, reference: {time_sync['referenceTime']})")
+
+    if not AUTO_FIX_TIME_SYNC:
+        print("ℹ️ AUTO_FIX_TIME_SYNC is disabled - not modifying the device clock.")
+        return time_sync
+
+    print("🔧 Attempting to correct NVR clock (NTP first, manual set as fallback)...")
+
+    if brand == "HIKVISION":
+        fixed = await fix_hikvision_time(client)
+    elif brand == "DAHUA":
+        fixed = await fix_dahua_time(client)
+    else:
+        return time_sync
+
+    if fixed.get("isSynced"):
+        print(f"✅ NVR clock corrected. Action taken: {fixed.get('actionTaken')}")
+    else:
+        print(f"❌ NVR clock still not in sync after fix attempt. Action taken: {fixed.get('actionTaken')}")
+
+    return fixed
 
 
 # ============================================================
@@ -1346,6 +1662,10 @@ async def generate_collage_and_retention():
             f"{len(CHANNELS)} channels..."
         )
 
+        # Check the NVR clock once per run. The clock is only modified
+        # when it is out of sync and AUTO_FIX_TIME_SYNC=true.
+        time_sync = await ensure_nvr_time_sync(client, brand)
+
         # ----------------------------------------------------
         # CREATE TASKS
         # ----------------------------------------------------
@@ -1386,6 +1706,9 @@ async def generate_collage_and_retention():
     valid_snapshots = []
 
     retention_data = {}
+
+    # Time-sync status applies to the NVR, not to an individual channel.
+    retention_data["timeSync"] = time_sync
 
     for i, (
         snapshot,
