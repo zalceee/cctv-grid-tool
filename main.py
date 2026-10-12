@@ -60,7 +60,7 @@ PHT = timezone(timedelta(hours=8))
 
 # How far the NVR's clock is allowed to drift from the reference clock
 # before it is flagged as out of sync.
-TIME_SYNC_THRESHOLD_SECONDS = int(os.getenv("TIME_SYNC_THRESHOLD_SECONDS", "60"))
+TIME_SYNC_THRESHOLD_SECONDS = int(os.getenv("TIME_SYNC_THRESHOLD_SECONDS", "600"))
 
 # Detection/reporting always runs. Clock correction is performed only when enabled.
 AUTO_FIX_TIME_SYNC = os.getenv("AUTO_FIX_TIME_SYNC", "false").strip().lower() == "true"
