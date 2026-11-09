@@ -1,3 +1,4 @@
+
 @echo off
 
 set "APPDIR=%~dp0"
@@ -14,10 +15,10 @@ schtasks /create ^
 
 if %errorlevel% equ 0 (
     echo.
-    echo CCTVGridTool task created successfully.
+    echo CCTVGridTool startup task created successfully.
 ) else (
     echo.
-    echo Failed to create CCTVGridTool task.
+    echo Failed to create CCTVGridTool startup task.
     pause
     exit /b 1
 )
@@ -42,16 +43,34 @@ if %errorlevel% equ 0 (
 )
 
 echo.
+echo Creating daily 11:00 AM trigger...
+
+schtasks /create ^
+ /tn "ITTools\CCTVGridTool_11AM" ^
+ /tr "cmd.exe /c ""%LAUNCHER%""" ^
+ /sc daily ^
+ /st 11:00 ^
+ /rl highest ^
+ /f
+
+if %errorlevel% equ 0 (
+    echo Daily 11:00 AM task created successfully.
+) else (
+    echo Failed to create daily 11:00 AM task.
+)
+
+echo.
 echo ========================================
 echo CCTVGridTool Task Configuration
 echo ========================================
-echo Allow task to run on demand       : YES
-echo Run task if scheduled start missed: YES
-echo Start only on AC power            : NO
-echo Stop when switching to battery    : YES
-echo Execution time limit              : NONE
-echo Force stop after time limit        : NO
-echo Configure for                     : Windows 10
+echo Startup trigger                  : YES
+echo Daily execution                  : 11:00 AM
+echo Allow task to run on demand      : YES
+echo Run if scheduled start missed   : YES
+echo Start only on AC power           : NO
+echo Stop when switching to battery   : NO
+echo Execution time limit             : NONE
+echo Configure for                    : Windows 10
 echo ========================================
 
 pause
