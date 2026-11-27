@@ -125,7 +125,7 @@ def update_cgt():
 
         print("Successfully updated cgt.exe!")
 
-        os.startfile(str(app_path))
+        # os.startfile(str(app_path))
 
     except PermissionError:
         print("Cannot replace cgt.exe.")
@@ -143,3 +143,4 @@ def update_cgt():
 
 if __name__ == "__main__":
     update_cgt()
+    sys.exit(0)
