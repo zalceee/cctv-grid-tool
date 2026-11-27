@@ -1,0 +1,20 @@
+======================================== 
+CGT Application Log - 20261127_203618 
+======================================== 
+Running updater... 
+Checking GitHub for updates...
+Update failed: HTTP Error 404: Not Found
+Press Enter to exit... 
+Starting CCTV Grid Tool... 
+Traceback (most recent call last):
+  File "main.py", line 1924, in <module>
+  File "asyncio\runners.py", line 205, in run
+  File "asyncio\runners.py", line 128, in run
+  File "asyncio\base_events.py", line 720, in run_until_complete
+  File "main.py", line 1647, in generate_collage_and_retention
+  File "encodings\cp1252.py", line 19, in encode
+UnicodeEncodeError: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+[PYI-5940:ERROR] Failed to execute script 'main' due to unhandled exception!
+Probing 192.168.18.36 to detect NVR brand...
+ 
+Process completed. 
