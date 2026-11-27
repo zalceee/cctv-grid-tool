@@ -1,8 +1,5 @@
 /uploads
-/dist
 /build
-main.py
-dahua.py
+/dist
 *.spec
-*.ico
-*.py
+/logs
