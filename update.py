@@ -138,7 +138,7 @@ def update_cgt():
         if temp_path.exists():
             temp_path.unlink(missing_ok=True)
 
-    input("Press Enter to exit...")
+    # input("Press Enter to exit...")
 
 
 if __name__ == "__main__":
