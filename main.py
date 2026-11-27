@@ -1902,16 +1902,16 @@ async def generate_collage_and_retention():
     # ========================================================
 
     print(
-        "\n✅ Success! Collage and "
+        "\n Success! Collage and "
         "retention data generated."
     )
 
     print(
-        f"📁 Image Saved: {image_path}"
+        f"Image Saved: {image_path}"
     )
 
     print(
-        f"📁 JSON Saved: {json_path}\n"
+        f"JSON Saved: {json_path}\n"
     )
 
 
