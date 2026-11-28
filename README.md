@@ -22,6 +22,7 @@ CHANNELS=101,102,103,104,105,106,107,108,109,1001,1101,1102
 ### Downloads
 
 | Download | Version     | Description                |
-| :-------: | :------: | :------------------------: |
-| `[![Static Badge](https://img.shields.io/badge/CCTV_Grid_Tool-v1.0-green?labelColor=black)](https://github.com/zalceee/cctv-grid-tool/archive/refs/tags/v1.0.zip) | `v1.0` | CCTV Grid Tool is a desktop application that automates CCTV monitoring, recording retention checks, and daily report generation for Dahua and Hikvision NVR systems, with automated uploads to Google Drive and Google Sheets. |
+| :-------: | :----------: | :------------------------: |
+| [![CCTV Grid Tool](https://img.shields.io/static/v1?label=CCTV%20Grid%20Tool&message=v1.1-alpha-1&color=yellow&labelColor=black)]([https://github.com/zalceee/cctv-grid-tool/archive/refs/tags/v1.1-alpha-1.zip](https://github.com/zalceee/cctv-grid-tool/archive/refs/tags/v1.1-alpha-1.zip)) | `v1.1-alpha-1` | Alpha release |
+| [![Static Badge](https://img.shields.io/badge/CCTV_Grid_Tool-v1.0-green?labelColor=black)](https://github.com/zalceee/cctv-grid-tool/archive/refs/tags/v1.0.zip) | Stable `v1.0` | CCTV Grid Tool is a desktop application that automates CCTV monitoring, recording retention checks, and daily report generation for Dahua and Hikvision NVR systems, with automated uploads to Google Drive and Google Sheets. |
 
