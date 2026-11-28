@@ -159,7 +159,7 @@ def update_cgt():
                         print("Already up to date!")
                         print("Version and SHA256 match.")
 
-                        os.startfile(str(app_path))
+                        # os.startfile(str(app_path))
                         return
 
                     print("SHA256 mismatch!")
@@ -180,7 +180,7 @@ def update_cgt():
                             print("Version matches.")
                             print("No download required.")
 
-                            os.startfile(str(app_path))
+                            # os.startfile(str(app_path))
                             return
 
                     else:
